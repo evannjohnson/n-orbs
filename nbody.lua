@@ -59,6 +59,25 @@ function redraw()
         screen.close()
         screen.stroke()
     end
+    -- for i=1, #sim.bodies - 1 do
+    --     local bi = sim.bodies[i]
+    --     screen.move(bi.pos[1] * 100 + 63, bi.pos[2] * 100 + 31)
+    --     screen.line(63,31)
+    --     screen.close()
+    --     screen.stroke()
+    --     for j=i+1, #sim.bodies do
+    --         local bj = sim.bodies[j]
+    --         screen.move(bi.pos[1] * 100 + 63, bi.pos[2] * 100 + 31)
+    --         screen.line(bj.pos[1] * 100 + 63, bj.pos[2] * 100 + 31)
+    --         screen.close()
+    --         screen.stroke()
+    --     end
+    -- end
+    -- screen.move(sim.bodies[#sim.bodies].pos[1] * 100 + 63, sim.bodies[#sim.bodies].pos[2] * 100 + 31)
+    -- screen.line(63,31)
+    -- screen.close()
+    -- screen.stroke()
+
 
     if show_tps then
         if sim.ticks % 100 == 0 then

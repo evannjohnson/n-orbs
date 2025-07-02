@@ -9,7 +9,8 @@ tps = 0
 function init()
     -- available traits to map outputs to
     mod_dests = {
-        crow = {1, 2, 3, 4}
+        crow = {1, 2, 3, 4},
+        txo = {1, 2, 3, 4}
     }
     traits = {"x", "y", "r", "vel", "acc"}
     -- given a body, return the trait
@@ -32,6 +33,25 @@ function init()
                 -- print(body.acc:length())
                 crow.output[out].volts = body.acc:length()
             end
+        },
+        txo = {
+            x = function(body, out)
+                crow.ii.txo.cv(out, body.pos[1] * 7)
+            end,
+            y = function(body, out)
+                crow.ii.txo.cv(out, body.pos[2] * 7)
+            end,
+            r = function(body, out)
+                crow.ii.txo.cv(out, body.pos:length() * 6)
+            end,
+            vel = function(body, out)
+                -- print(body.vel:length())
+                crow.ii.txo.cv(out, body.vel:length())
+            end,
+            acc = function(body, out)
+                -- print(body.acc:length())
+                crow.ii.txo.cv(out, body.acc:length())
+            end
         }
     }
     -- key is body number, value is another table
@@ -49,7 +69,6 @@ function init()
            addDestParam(dest)
         end
     end
-
 
     screen.level(15)
     screen.aa(1)
@@ -77,7 +96,7 @@ function addDestParam(dest, out)
 
     params:add{
         id=base_id,
-        name="○ "..base_name.." mod",
+        name="○ "..base_name,
         type="binary",
         behavior="toggle",
         default=0,
@@ -89,7 +108,7 @@ function addDestParam(dest, out)
                 body_callbacks[n] = body_callbacks[n] or {}
                 body_callbacks[n][base_id] = newTraitHandler(trait, dest, out)
 
-                params:lookup_param(base_id).name = "● "..base_name.." mod"
+                params:lookup_param(base_id).name = "● "..base_name
                 params:show(base_id.."_body")
                 params:show(base_id.."_trait")
                 _menu.rebuild_params()
@@ -101,7 +120,7 @@ function addDestParam(dest, out)
                     end
                 end
 
-                params:lookup_param(base_id).name = "○ "..base_name.." mod"
+                params:lookup_param(base_id).name = "○ "..base_name
                 params:hide(base_id.."_body")
                 params:hide(base_id.."_trait")
                 _menu.rebuild_params()

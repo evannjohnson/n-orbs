@@ -1,5 +1,5 @@
 -- nbody: nbody sim
--- v0.1 @evannjohnson
+-- by Evan Johnson
 -- implementation follows https://github.com/DeadlockCode/n-body
 Simulation = include("nbody-lua-lib/init")
 

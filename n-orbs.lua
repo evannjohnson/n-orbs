@@ -7,6 +7,12 @@ show_tps = true
 tps = 0
 -- max_tps = 5000
 max_tps = 200
+fade_counter = 0
+ready_draw = true
+ready_sim = true
+prev_time = os.time()
+ticks = 0
+frames = 0
 
 function init()
     -- available traits to map outputs to
@@ -75,10 +81,15 @@ function init()
 
     screen.aa(1)
     screen.line_width(1)
+    draw_ready_metro = metro.init(readyDraw,1/60)
+	draw_ready_metro:start()
+ --    sim_ready_metro = metro.init(readySim,1/180)
+	-- sim_ready_metro:start()
 
     sim = Simulation:new_rand(3)
     sim.gravExponent = 1.5
-    simId = startSim(sim, max_tps)
+    -- sim.dt = 0.01
+    simId = startSim()
     start_time = os.time()
 end
 
@@ -192,25 +203,58 @@ function addDestParam(dest, out)
 end
 
 function redraw()
+    screen.stroke()
     -- fadeEffect.darkenBuffer()
-    fadeEffect.alphaRectangle()
+    fadeEffect.darkenPixels()
+    -- fadeEffect.alphaRectangle()
+    -- fadeEffect.clear()
 
-    drawBodies.eachBody(drawBody.ring)
+    -- drawBodies.eachBody(drawBody.ring)
     -- drawBodies.connectedPoints()
 
-    if show_tps then
-        if sim.ticks % 100 == 0 then
-            tps = sim.ticks/(os.time() - start_time)
+    for i, body in ipairs(sim.bodies) do
+        drawBody.ring(body)
+        local x = body.pos[1] * 26 + 63
+        local y = body.pos[2] * 26 + 31
+        local r = 2
+        screen.circle(x, y, r)
+        screen.close()
+        screen.stroke()
+
+        local width = r*4
+        local ix = math.floor(x+0.5)
+        local iy = math.floor(y+0.5)
+        local wx = math.max(0, math.min(127, ix-(r*2)))
+        local wy = math.max(0, math.min(63, iy-(r*2)))
+        -- print("wx:"..wx..", wy:"..wy..", w:"..width)
+        local buf = screen.peek(wx, wy, width, width)
+
+        for i = 1, #buf do
+            local rel_x = (i - 1) % (width)
+            local rel_y = math.floor((i - 1) / width)
+            local c = 128 * (wy + rel_y) + rel_x + wx
+            local l = buf:byte(i)
+            -- print(l)
+            -- if l + 1 > 0 then
+                lit_pixels[c] = l
+            -- end
         end
-        screen.move(10,10)
-        screen.text("tps:"..tps)
     end
 
+    -- if show_tps then
+    --     if sim.ticks % 100 == 0 then
+    --         tps = sim.ticks/(os.time() - start_time)
+    --     end
+    --     -- screen.move(10,10)
+    --     -- screen.text("tps:"..tps)
+    -- end
+
+    screen.stroke()
     screen.update()
 end
 
 fadeEffect = {
-    noFade = function()
+    clear = function()
         screen.clear()
     end,
     alphaRectangle = function()
@@ -222,7 +266,8 @@ fadeEffect = {
         screen.blend_mode(0)
     end,
     darkenBuffer = function()
-        if sim.ticks % 4 == 0 then
+        -- if sim.ticks % 4 == 0 then
+        -- if fade_counter == 0 then
             local buf = screen.peek(0,0,128,64)
             -- local debuf = buf:gsub(".", function(c)
             --     local byte = c:byte() - 1
@@ -236,7 +281,32 @@ fadeEffect = {
             end
             local debuf = table.concat(t)
             screen.poke(0,0,128,64,debuf)
-        end
+        -- end
+        fade_counter = (fade_counter + 1) % 2
+    end,
+    darkenPixels = function()
+        -- if fade_counter == 0 then
+        local remove_pixels = {}
+            for c,level in pairs(lit_pixels) do
+                local level_d = level - 1
+                local x = c % 128
+                local y = math.floor(c / 128)
+                screen.level(level_d)
+                screen.pixel(x, y)
+                screen.fill()
+                if level_d > 0 then
+                    lit_pixels[c] = level_d
+                else
+                    -- lit_pixels[c] = nil
+                    table.insert(remove_pixels, c)
+                end
+            end
+
+            for _,c in ipairs(remove_pixels) do
+                lit_pixels[c] = nil
+            end
+        -- end
+        -- fade_counter = (fade_counter + 1) % 2
     end
 }
 
@@ -270,35 +340,69 @@ drawBodies = {
 
 drawBody = {
     circle = function(body)
+        screen.level(15)
         screen.circle(body.pos[1] * 26 + 63, body.pos[2] * 26 + 31, 2)
         screen.close()
         screen.fill()
         screen.stroke()
     end,
     ring = function(body)
+        screen.level(15)
         screen.circle(body.pos[1] * 26 + 63, body.pos[2] * 26 + 31, 2)
         screen.close()
         screen.stroke()
     end
 }
 
-function startSim(sim, max_tps)
-    id = clock.run(function()
-        while true do
-            sim:update()
+function startSim()
+    -- id = clock.run(function()
+    --     while true do
+    --         sim:update()
 
-            for n,callbacks in pairs(body_callbacks) do
-                for _,callback in pairs(callbacks) do
-                    callback(sim.bodies[n])
-                end
-            end
+    --         for n,callbacks in pairs(body_callbacks) do
+    --             for _,callback in pairs(callbacks) do
+    --                 callback(sim.bodies[n])
+    --             end
+    --         end
 
-            redraw()
+    --         -- redraw()
 
-            clock.sleep(1 / max_tps)
-        end
-    end)
+    --         clock.sleep(1 / max_tps)
+    --     end
+    -- end)
+    sim.dt = 0.015
+    id = metro.init(updateSim,1/120)
+    id:start()
     return id
+end
+
+function updateSim()
+    -- if ready_sim then
+        sim:update()
+        ticks = ticks + 1
+
+        for n,callbacks in pairs(body_callbacks) do
+            for _,callback in pairs(callbacks) do
+                callback(sim.bodies[n])
+            end
+        end
+    --     ready_sim = false
+    -- end
+end
+
+function refresh()
+    if ready_draw then
+        redraw()
+        ready_draw = false
+    end
+end
+
+function readyDraw()
+    ready_draw = true
+end
+
+function readySim()
+    ready_sim = true
 end
 
 function tableSize(t)

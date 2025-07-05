@@ -82,7 +82,13 @@ function init()
     screen.aa(1)
     screen.line_width(1)
     draw_ready_metro = metro.init(readyDraw,1/60)
-	draw_ready_metro:start()
+    draw_ready_metro:start()
+    screen_ping_metro = metro.init(function()
+        if redraw == my_redraw then
+            screen.ping()
+        end
+    end, 899)
+    screen_ping_metro:start()
 
     sim = Simulation:new_rand(3)
     sim.gravExponent = 1.5
@@ -247,6 +253,7 @@ function redraw()
     screen.stroke()
     screen.update()
 end
+my_redraw = redraw -- provides a way to check if in system menu
 
 fadeEffect = {
     alphaRectangle = function()

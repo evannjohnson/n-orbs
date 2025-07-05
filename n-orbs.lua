@@ -83,8 +83,6 @@ function init()
     screen.line_width(1)
     draw_ready_metro = metro.init(readyDraw,1/60)
 	draw_ready_metro:start()
- --    sim_ready_metro = metro.init(readySim,1/180)
-	-- sim_ready_metro:start()
 
     sim = Simulation:new_rand(3)
     sim.gravExponent = 1.5
@@ -204,16 +202,13 @@ end
 
 function redraw()
     screen.stroke()
-    -- fadeEffect.darkenBuffer()
     fadeEffect.darkenPixels()
-    -- fadeEffect.alphaRectangle()
-    -- fadeEffect.clear()
 
     -- drawBodies.eachBody(drawBody.ring)
     -- drawBodies.connectedPoints()
 
     for i, body in ipairs(sim.bodies) do
-        drawBody.ring(body)
+        drawBody.circle(body)
         local x = body.pos[1] * 26 + 63
         local y = body.pos[2] * 26 + 31
         local r = 2
@@ -254,9 +249,6 @@ function redraw()
 end
 
 fadeEffect = {
-    clear = function()
-        screen.clear()
-    end,
     alphaRectangle = function()
         screen.blend_mode('dest_out')
         screen.level_a(0, .91)
@@ -355,21 +347,6 @@ drawBody = {
 }
 
 function startSim()
-    -- id = clock.run(function()
-    --     while true do
-    --         sim:update()
-
-    --         for n,callbacks in pairs(body_callbacks) do
-    --             for _,callback in pairs(callbacks) do
-    --                 callback(sim.bodies[n])
-    --             end
-    --         end
-
-    --         -- redraw()
-
-    --         clock.sleep(1 / max_tps)
-    --     end
-    -- end)
     sim.dt = 0.015
     id = metro.init(updateSim,1/120)
     id:start()
@@ -377,17 +354,14 @@ function startSim()
 end
 
 function updateSim()
-    -- if ready_sim then
-        sim:update()
-        ticks = ticks + 1
+    sim:update()
+    ticks = ticks + 1
 
-        for n,callbacks in pairs(body_callbacks) do
-            for _,callback in pairs(callbacks) do
-                callback(sim.bodies[n])
-            end
+    for n,callbacks in pairs(body_callbacks) do
+        for _,callback in pairs(callbacks) do
+            callback(sim.bodies[n])
         end
-    --     ready_sim = false
-    -- end
+    end
 end
 
 function refresh()

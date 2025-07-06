@@ -68,6 +68,16 @@ function init()
     -- callback on every tick
     body_callbacks = {}
 
+    params:add{
+        id="init_sim",
+        name="init sim",
+        type="binary",
+        behavior="trigger",
+        action=function()
+            initSim()
+        end
+    }
+
     params:add_separator("mod_dests", "modulation destinations")
     for dest,outs in pairs(mod_dests) do
         if type(outs) == 'table' then
@@ -80,7 +90,7 @@ function init()
     end
 
     screen.aa(1)
-    screen.line_width(1)
+    screen.line_width(.1)
     draw_ready_metro = metro.init(readyDraw,1/60)
     draw_ready_metro:start()
     screen_ping_metro = metro.init(function()
@@ -90,10 +100,7 @@ function init()
     end, 899)
     screen_ping_metro:start()
 
-    sim = Simulation:new_rand(3)
-    sim.gravExponent = 1.5
-    -- sim.dt = 0.01
-    simId = startSim()
+    initSim()
     start_time = os.time()
 end
 
@@ -214,7 +221,7 @@ function redraw()
     -- drawBodies.connectedPoints()
 
     for i, body in ipairs(sim.bodies) do
-        drawBody.circle(body)
+        drawBody.ring(body)
         local x = body.pos[1] * 26 + 63
         local y = body.pos[2] * 26 + 31
         local r = 2
@@ -347,17 +354,25 @@ drawBody = {
     end,
     ring = function(body)
         screen.level(15)
-        screen.circle(body.pos[1] * 26 + 63, body.pos[2] * 26 + 31, 2)
+        screen.circle(body.pos[1] * 26 + 63, body.pos[2] * 26 + 31, 2.7)
         screen.close()
         screen.stroke()
     end
 }
 
-function startSim()
+function initSim()
+    if sim_id then
+        metro.free(sim_id)
+        sim_id = nil
+    end
+
+    sim = Simulation:new_rand(3)
+    sim.gravExponent = 1.5
+    -- sim.dt = 0.01
     sim.dt = 0.015
-    id = metro.init(updateSim,1/120)
-    id:start()
-    return id
+    sim_metro = metro.init(updateSim,1/120)
+    sim_id = sim_metro.id
+    sim_metro:start()
 end
 
 function updateSim()

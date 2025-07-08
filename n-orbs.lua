@@ -216,6 +216,7 @@ end
 function redraw()
     screen.stroke()
     fadeEffect.darkenPixels()
+    -- screen.clear()
 
     -- drawBodies.eachBody(drawBody.ring)
     -- drawBodies.connectedPoints()
@@ -235,18 +236,7 @@ function redraw()
         local wx = math.max(0, math.min(127, ix-(r*2)))
         local wy = math.max(0, math.min(63, iy-(r*2)))
         -- print("wx:"..wx..", wy:"..wy..", w:"..width)
-        local buf = screen.peek(wx, wy, width, width)
-
-        for i = 1, #buf do
-            local rel_x = (i - 1) % (width)
-            local rel_y = math.floor((i - 1) / width)
-            local c = 128 * (wy + rel_y) + rel_x + wx
-            local l = buf:byte(i)
-            -- print(l)
-            -- if l + 1 > 0 then
-                lit_pixels[c] = l
-            -- end
-        end
+        addToLitPixels(wx, wy, width, width)
     end
 
     -- if show_tps then
@@ -261,6 +251,20 @@ function redraw()
     screen.update()
 end
 my_redraw = redraw -- provides a way to check if in system menu
+
+-- for all pixels in defined area, add them to lit_pixels
+function addToLitPixels(x,y,l,w)
+    local buf = screen.peek(x, y, l, w)
+
+    for i = 1, #buf do
+        local rel_x = (i - 1) % (l)
+        local rel_y = math.floor((i - 1) / l)
+        local c = 128 * (y + rel_y) + rel_x + x
+        local level = buf:byte(i)
+        lit_pixels[c] = level
+    end
+
+end
 
 fadeEffect = {
     alphaRectangle = function()
@@ -368,8 +372,8 @@ function initSim()
 
     sim = Simulation:new_rand(3)
     sim.gravExponent = 1.5
-    -- sim.dt = 0.01
-    sim.dt = 0.015
+    sim.dt = 0.01
+    -- sim.dt = 0.015
     sim_metro = metro.init(updateSim,1/120)
     sim_id = sim_metro.id
     sim_metro:start()
